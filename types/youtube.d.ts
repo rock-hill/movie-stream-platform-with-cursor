@@ -47,6 +47,8 @@ declare namespace YT {
     getVideoUrl(): string;
     getVideoEmbedCode(): string;
     getPlayerState(): number;
+    loadVideoById(videoId: string | { videoId: string; startSeconds?: number; endSeconds?: number }): void;
+    cueVideoById(videoId: string | { videoId: string; startSeconds?: number; endSeconds?: number }): void;
   }
 
   enum PlayerState {
