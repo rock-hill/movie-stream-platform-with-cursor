@@ -1,0 +1,318 @@
+---
+name: project-rules
+description: プロジェクト開発ルール - docsディレクトリ確認とNext.js 16.1ベストプラクティス
+---
+
+# プロジェクト開発ルール
+
+## 1. ドキュメント管理ルール
+
+### docsディレクトリの確認
+開発を開始する前に、必ず`docs/`ディレクトリ配下のドキュメントを確認すること。
+
+#### 確認すべきドキュメント
+- **`docs/requirements.md`**: アプリケーションの要件定義
+  - 機能要件、UI/UX要件、データ構造を確認
+  - 実装前に要件を理解していることを確認
+
+- **`docs/tech-stack.md`**: 技術スタック
+  - 使用する技術、ライブラリ、バージョンを確認
+  - 新しいライブラリを追加する前に、このドキュメントを確認・更新
+
+- **`docs/architecture.md`**: アーキテクチャ設計
+  - ディレクトリ構造、コンポーネント設計、データフローを確認
+  - 設計に従って実装すること
+
+- **`docs/progress.md`**: 進捗管理
+  - 現在の進捗状況を確認
+  - タスク完了時は必ず更新すること
+
+#### ドキュメント更新ルール
+- 実装前に要件や設計を変更する場合は、該当ドキュメントを先に更新
+- 新しい技術を導入する場合は、`tech-stack.md`を更新
+- タスク完了時は`progress.md`を更新
+
+---
+
+## 2. Next.js 16.1 ベストプラクティス（キャッシュコンポーネント有効化なし）
+
+### 2.1 App Routerの使用
+- **App Router**を使用すること（Pages Routerは使用しない）
+- すべてのページは`app/`ディレクトリ配下に配置
+
+### 2.2 サーバーコンポーネントとクライアントコンポーネント
+
+#### サーバーコンポーネント（デフォルト）
+- デフォルトではすべてのコンポーネントはサーバーコンポーネント
+- データフェッチング、データベースアクセスはサーバーコンポーネントで行う
+- `async/await`を直接使用可能
+
+```typescript
+// ✅ サーバーコンポーネント（デフォルト）
+export default async function Page() {
+  const data = await fetchData();
+  return <div>{data}</div>;
+}
+```
+
+#### クライアントコンポーネント
+- インタラクティブな機能（useState, useEffect, イベントハンドラー）が必要な場合のみ使用
+- ファイルの先頭に`'use client'`ディレクティブを追加
+
+```typescript
+// ✅ クライアントコンポーネント
+'use client';
+
+import { useState } from 'react';
+
+export default function InteractiveComponent() {
+  const [count, setCount] = useState(0);
+  return <button onClick={() => setCount(count + 1)}>{count}</button>;
+}
+```
+
+### 2.3 データフェッチング
+
+#### サーバーコンポーネントでのフェッチ
+- `fetch`を使用する際は、適切なキャッシュ戦略を設定
+- モックデータの場合は、`cache: 'no-store'`を使用（常に最新データ）
+
+```typescript
+// ✅ モックデータの場合
+const data = await fetch('/api/data', {
+  cache: 'no-store', // 常に最新データを取得
+});
+```
+
+#### 動的レンダリング
+- デモ版では、必要に応じて動的レンダリングを使用
+- `export const dynamic = 'force-dynamic'`で強制的に動的レンダリング
+
+```typescript
+// ✅ 動的レンダリングを強制
+export const dynamic = 'force-dynamic';
+
+export default async function Page() {
+  // ...
+}
+```
+
+### 2.4 ルーティング
+
+#### ファイルベースルーティング
+- `app/`ディレクトリ内のファイル構造がルートを決定
+- 動的ルートは`[id]`形式のフォルダ名を使用
+
+```
+app/
+├── page.tsx                    → /
+├── courses/
+│   ├── page.tsx                → /courses
+│   └── [id]/
+│       ├── page.tsx            → /courses/[id]
+│       └── watch/
+│           └── page.tsx        → /courses/[id]/watch
+```
+
+#### ナビゲーション
+- `next/link`を使用してクライアントサイドナビゲーションを実装
+- `next/navigation`の`useRouter`、`usePathname`を使用
+
+```typescript
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+
+// ✅ Linkコンポーネント
+<Link href="/courses/123">コース詳細</Link>
+
+// ✅ useRouter（クライアントコンポーネント内）
+const router = useRouter();
+router.push('/courses/123');
+```
+
+### 2.5 メタデータとSEO
+
+#### メタデータの設定
+- `metadata`オブジェクトまたは`generateMetadata`関数を使用
+
+```typescript
+// ✅ 静的メタデータ
+export const metadata = {
+  title: 'コース一覧',
+  description: '動画配信プラットフォーム',
+};
+
+// ✅ 動的メタデータ
+export async function generateMetadata({ params }: { params: { id: string } }) {
+  const course = await getCourse(params.id);
+  return {
+    title: course.title,
+    description: course.description,
+  };
+}
+```
+
+### 2.6 画像最適化
+
+#### Next.js Imageコンポーネント
+- `next/image`を使用して画像を最適化
+- 外部画像の場合は`next.config.ts`でドメインを設定
+
+```typescript
+import Image from 'next/image';
+
+// ✅ Imageコンポーネント
+<Image
+  src="/thumbnail.jpg"
+  alt="コースサムネイル"
+  width={400}
+  height={300}
+  priority // 重要画像の場合
+/>
+```
+
+### 2.7 エラーハンドリング
+
+#### Error Boundary
+- `error.tsx`ファイルでエラーハンドリングを実装
+
+```typescript
+// app/courses/[id]/error.tsx
+'use client';
+
+export default function Error({
+  error,
+  reset,
+}: {
+  error: Error & { digest?: string };
+  reset: () => void;
+}) {
+  return (
+    <div>
+      <h2>エラーが発生しました</h2>
+      <button onClick={() => reset()}>再試行</button>
+    </div>
+  );
+}
+```
+
+#### Loading UI
+- `loading.tsx`ファイルでローディング状態を表示
+
+```typescript
+// app/courses/[id]/loading.tsx
+export default function Loading() {
+  return <div>読み込み中...</div>;
+}
+```
+
+### 2.8 型安全性
+
+#### TypeScriptの使用
+- すべてのコンポーネント、関数、データに型を定義
+- `any`型の使用を避ける
+- 型定義は`lib/types/`ディレクトリに集約
+
+```typescript
+// ✅ 型定義
+interface Course {
+  id: string;
+  title: string;
+  description: string;
+}
+
+// ✅ 型付きコンポーネント
+export default function CourseCard({ course }: { course: Course }) {
+  return <div>{course.title}</div>;
+}
+```
+
+### 2.9 パフォーマンス最適化
+
+#### コード分割
+- 動的インポートを使用してコンポーネントを分割
+
+```typescript
+// ✅ 動的インポート
+import dynamic from 'next/dynamic';
+
+const VideoPlayer = dynamic(() => import('@/components/video/VideoPlayer'), {
+  loading: () => <p>読み込み中...</p>,
+  ssr: false, // クライアントサイドのみ
+});
+```
+
+#### フォント最適化
+- `next/font`を使用してフォントを最適化
+
+```typescript
+import { Inter } from 'next/font/google';
+
+const inter = Inter({ subsets: ['latin'] });
+```
+
+### 2.10 スタイリング
+
+#### Tailwind CSS
+- Tailwind CSSを使用してスタイリング
+- ユーティリティクラスを優先的に使用
+- カスタムクラスが必要な場合は`globals.css`に追加
+
+```typescript
+// ✅ Tailwind CSSクラス
+<div className="flex flex-col gap-4 p-6 bg-white rounded-lg shadow-md">
+  <h1 className="text-2xl font-bold">コースタイトル</h1>
+</div>
+```
+
+### 2.11 環境変数
+
+#### 環境変数の管理
+- `.env.local`ファイルで環境変数を管理
+- クライアントサイドで使用する場合は`NEXT_PUBLIC_`プレフィックスを付与
+
+```typescript
+// ✅ サーバーサイド
+const apiKey = process.env.API_KEY;
+
+// ✅ クライアントサイド
+const publicKey = process.env.NEXT_PUBLIC_API_KEY;
+```
+
+---
+
+## 3. コーディング規約
+
+### 3.1 ファイル命名規則
+- コンポーネントファイルはPascalCase: `CourseCard.tsx`
+- ユーティリティファイルはcamelCase: `storage.ts`
+- ページファイルは`page.tsx`、レイアウトファイルは`layout.tsx`
+
+### 3.2 コンポーネント構造
+- 1ファイル1コンポーネント
+- デフォルトエクスポートを使用
+- Propsの型定義を明示
+
+### 3.3 コメント
+- 複雑なロジックにはコメントを追加
+- 日本語コメントで問題なし（このプロジェクトでは日本語を使用）
+
+---
+
+## 4. 開発フロー
+
+1. **ドキュメント確認**: `docs/`ディレクトリを確認
+2. **設計確認**: `architecture.md`で設計を確認
+3. **実装**: 上記のベストプラクティスに従って実装
+4. **進捗更新**: `progress.md`を更新
+5. **コードレビュー**: 必要に応じてレビュー
+
+---
+
+## 5. 禁止事項
+
+- ❌ キャッシュコンポーネント（React 19のCache API）を使用しない
+- ❌ Pages Routerを使用しない（App Routerのみ）
+- ❌ `any`型の使用を避ける
+- ❌ ドキュメントを確認せずに実装を開始しない
+- ❌ 進捗管理を更新しない
