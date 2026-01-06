@@ -2,6 +2,7 @@
 
 import { useEffect, useState, use } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import {
   getCourseById,
@@ -78,7 +79,8 @@ export default function WatchPage({ params }: WatchPageProps) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <div className="mb-4 text-gray-600 dark:text-gray-400">読み込み中...</div>
+          <div className="mb-4 inline-block h-12 w-12 animate-spin rounded-full border-4 border-gray-300 border-t-blue-600 dark:border-gray-600 dark:border-t-blue-500"></div>
+          <p className="text-base font-medium text-gray-600 dark:text-gray-400">読み込み中...</p>
         </div>
       </div>
     );
@@ -93,18 +95,26 @@ export default function WatchPage({ params }: WatchPageProps) {
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-900">
       {/* ヘッダー */}
-      <header className="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-        <div className="mx-auto max-w-[1920px] px-4 py-3 sm:px-6 lg:px-8">
-          <h1 className="truncate text-lg font-semibold text-gray-900 dark:text-white">
-            {course.title}
-          </h1>
+      <header className="sticky top-0 z-50 border-b border-gray-200/80 bg-white/80 backdrop-blur-md dark:border-gray-700/80 dark:bg-gray-800/80">
+        <div className="mx-auto max-w-[1920px] px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between">
+            <h1 className="truncate text-lg font-bold text-gray-900 dark:text-white">
+              {course.title}
+            </h1>
+            <Link
+              href={`/courses/${course.id}`}
+              className="ml-4 shrink-0 text-sm font-medium text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
+            >
+              詳細に戻る
+            </Link>
+          </div>
         </div>
       </header>
 
       {/* メインコンテンツ */}
       <div className="flex flex-1 flex-col lg:flex-row">
         {/* 左側: 動画プレーヤー */}
-        <div className="flex-1 p-4 lg:p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           <div className="mx-auto max-w-5xl">
             <VideoPlayer
               videoId={currentVideoData.video.youtubeVideoId}
@@ -112,19 +122,21 @@ export default function WatchPage({ params }: WatchPageProps) {
             />
 
             {/* 動画情報 */}
-            <div className="mt-4 rounded-lg bg-white p-4 shadow-sm dark:bg-gray-800">
-              <h2 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
+            <div className="mt-4 rounded-xl bg-white p-4 shadow-sm sm:mt-6 sm:p-6 dark:bg-gray-800">
+              <h2 className="mb-3 text-xl font-bold text-gray-900 sm:text-2xl dark:text-white">
                 {currentVideoData.video.title}
               </h2>
-              <p className="text-gray-600 dark:text-gray-400">
-                {currentVideoData.video.description}
-              </p>
+              {currentVideoData.video.description && (
+                <p className="text-sm leading-relaxed text-gray-700 sm:text-base dark:text-gray-300">
+                  {currentVideoData.video.description}
+                </p>
+              )}
             </div>
           </div>
         </div>
 
         {/* 右側: カリキュラムサイドバー */}
-        <aside className="w-full border-t border-gray-200 bg-white lg:h-[calc(100vh-73px)] lg:w-80 lg:border-l lg:border-t-0 dark:border-gray-700 dark:bg-gray-800">
+        <aside className="w-full border-t border-gray-200 bg-white lg:h-[calc(100vh-81px)] lg:w-96 lg:border-l lg:border-t-0 dark:border-gray-700 dark:bg-gray-800">
           <CourseSidebar
             course={course}
             currentVideoId={currentVideoId}
